@@ -5,7 +5,7 @@ public class Unit {
 
     private static final Unit instance = new Unit();
 
-    public Unit getInstance() {
+    public static Unit getInstance() {
         return instance;
     }
 

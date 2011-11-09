@@ -14,4 +14,6 @@ public interface Try<R> extends Callable<R> {
     boolean isReturn();
 
     R get();
+
+    R getOrElse(R defaultVal);
 }

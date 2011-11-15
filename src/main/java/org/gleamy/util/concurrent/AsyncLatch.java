@@ -47,8 +47,8 @@ public class AsyncLatch {
      * Decrement the latch. If the latch value reaches 0, awaiting
      * computations are executed inline.
      */
-    public void decr() {
-        List<Function> pendingTasks = null;
+    public int decr() {
+        final List<Function> pendingTasks;
         synchronized (this) {
             if (count <= 0) {
                 throw new IllegalStateException("count is negative value: " + count);
@@ -60,13 +60,15 @@ public class AsyncLatch {
                 pendingTasks = pending;
             }
             else {
-                pendingTasks = Collections.emptyList();
+                return count;
             }
         }
 
         for (Function f : pendingTasks) {
             f.apply();
         }
+
+        return 0;
     }
 
     public int getCount() {

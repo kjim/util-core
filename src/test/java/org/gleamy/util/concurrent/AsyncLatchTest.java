@@ -23,10 +23,12 @@ public class AsyncLatchTest {
         AsyncLatch latch = new AsyncLatch();
         assertThat(latch.getCount(), is(0));
 
-        latch.incr();
+        int count = latch.incr();
+        assertThat(count, is(1));
         assertThat(latch.getCount(), is(1));
 
-        latch.decr();
+        count = latch.decr();
+        assertThat(count, is(0));
         assertThat(latch.getCount(), is(0));
 
         try {
@@ -59,7 +61,8 @@ public class AsyncLatchTest {
         }};
 
         // guard count: 2 -> 1
-        latch.decr();
+        int count = latch.decr();
+        assertThat(count, is(1));
 
         new Verifications() {{
             List<?> waiters = getField(latch, List.class);
@@ -67,7 +70,8 @@ public class AsyncLatchTest {
         }};
 
         // guard count: 1 -> 0 ! fire
-        latch.decr();
+        count = latch.decr();
+        assertThat(count, is(0));
 
         new Verifications() {{
             List<?> waiters = getField(latch, List.class);

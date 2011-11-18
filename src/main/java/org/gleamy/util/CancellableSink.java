@@ -24,6 +24,6 @@ public class CancellableSink implements Cancellable {
 
     @Override
     public void linkTo(Cancellable other) {
-        throw new RuntimeException("linking not supported in CancellableSink");
+        throw new UnsupportedOperationException("linking not supported in CancellableSink");
     }
 }

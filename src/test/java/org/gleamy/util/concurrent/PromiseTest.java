@@ -11,9 +11,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
-import org.gleamy.util.Cancellable;
 import org.gleamy.util.CancellableSink;
 import org.gleamy.util.Function;
 import org.junit.Test;

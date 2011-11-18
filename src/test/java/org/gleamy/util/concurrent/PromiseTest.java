@@ -10,7 +10,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.gleamy.util.Cancellable;
+import org.gleamy.util.CancellableSink;
+import org.gleamy.util.Function;
 import org.junit.Test;
 
 public class PromiseTest {
@@ -26,12 +31,15 @@ public class PromiseTest {
     public void testCancellable() throws Exception {
         Promise<String> promise = new Promise<String>();
         assertThat(promise.isCancelled(), is(false));
+        assertThat(promise.isDefined(), is(false));
 
         promise.cancel();
         assertThat(promise.isCancelled(), is(true));
+        assertThat(promise.isDefined(), is(false));
 
         promise.cancel();
         assertThat(promise.isCancelled(), is(true));
+        assertThat(promise.isDefined(), is(false));
     }
 
     @Test
@@ -141,6 +149,26 @@ public class PromiseTest {
         assertTrue(10 <= timeElapsed);
 
         worker.shutdown();
+    }
+
+    @Test
+    public void testLinkCancelEvent() throws Exception {
+        final AtomicBoolean canceled = new AtomicBoolean(false);
+
+        Promise<Boolean> promise = new Promise<Boolean>();
+
+        // promise link to the cancellable-sink object
+        promise.linkTo(new CancellableSink(new Function() {
+            public void apply() {
+                canceled.compareAndSet(false, true);
+            }
+        }));
+
+        assertThat(canceled.get(), is(false));
+
+        promise.cancel();
+
+        assertThat(canceled.get(), is(true));
     }
 
     @Test

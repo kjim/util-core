@@ -91,7 +91,7 @@ public class Promise<A> extends RichFuture<A> {
      *
      * @throws ImmutableResult if the Promise is already populated
      */
-    private void update(Try<A> result) throws ImmutableException {
+    public void update(Try<A> result) throws ImmutableException {
         if (!updateIfEmpty(result)) {
             throw new ImmutableException("Result set multiple times: " + result);
         }
@@ -104,7 +104,7 @@ public class Promise<A> extends RichFuture<A> {
      *
      * @return true only if the result is updated, false if it was already set.
      */
-    private boolean updateIfEmpty(Try<A> result) {
+    public boolean updateIfEmpty(Try<A> result) {
         return ivar.set(result);
     }
 }

@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
@@ -77,6 +79,59 @@ public class ScheduledThreadPoolTimerTest {
         }
         catch (RejectedExecutionException e) {
             assertTrue(true);
+        }
+    }
+
+    @Test
+    public void testNotExecuteTimerTaskIfCancelCalled() throws Exception {
+        Timer timer = new ScheduledThreadPoolTimer();
+        try {
+            final AtomicBoolean ran = new AtomicBoolean(false);
+            Cancellable scheduled = timer.schedule(new Date(System.currentTimeMillis() + 300), new Function() {
+                public void apply() {
+                    ran.compareAndSet(false, true);
+                }
+            });
+            Thread.sleep(100);
+            scheduled.cancel();
+            Thread.sleep(300);
+
+            assertThat(ran.get(), is(false));
+        }
+        finally {
+            timer.stop();
+        }
+    }
+
+    @Test
+    public void testStopExecutionIfCancelCalled() throws Exception {
+        ScheduledThreadPoolTimer timer = new ScheduledThreadPoolTimer();
+        try {
+            Date quickly = new Date();
+            Date after250msec = new Date(System.currentTimeMillis() + 250);
+
+            final AtomicInteger counter = new AtomicInteger(0);
+            final Cancellable incr = timer.schedule(quickly, 100, TimeUnit.MILLISECONDS, new Function() {
+                public void apply() {
+                    counter.incrementAndGet();
+                }
+            });
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            timer.schedule(after250msec, new Function() {
+                public void apply() {
+                    incr.cancel();
+                    latch.countDown();
+                }
+            });
+
+            latch.await();
+
+            assertThat(incr.isCancelled(), is(true));
+            assertThat(counter.get(), is(3));
+        }
+        finally {
+            timer.stop();
         }
     }
 }

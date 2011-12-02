@@ -8,6 +8,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.After;
@@ -65,5 +67,49 @@ public class NativeTimerTest {
         assertTrue(after1sec.getTime() +   0 <= executedAt.get(0));
         assertTrue(after1sec.getTime() + 100 <= executedAt.get(1));
         assertTrue(after1sec.getTime() + 200 <= executedAt.get(2));
+    }
+
+    @Test
+    public void testNotExecuteTimerTaskIfCancelCalled() throws Exception {
+        Date after100msec = new Date(System.currentTimeMillis() + 100);
+
+        final AtomicBoolean ran = new AtomicBoolean(false);
+        Cancellable scheduled = timer.schedule(after100msec, new Function() {
+            public void apply() {
+                ran.set(true);
+            }
+        });
+
+        Thread.sleep(10);
+        scheduled.cancel();
+        Thread.sleep(100);
+
+        assertThat(ran.get(), is(false));
+    }
+
+    @Test
+    public void testStopExecutionIfCancelCalled() throws Exception {
+        Date quickly = new Date();
+        Date after250msec = new Date(System.currentTimeMillis() + 250);
+
+        final AtomicInteger counter = new AtomicInteger(0);
+        final Cancellable incr = timer.schedule(quickly, 100, TimeUnit.MILLISECONDS, new Function() {
+            public void apply() {
+                counter.incrementAndGet();
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        timer.schedule(after250msec, new Function() {
+            public void apply() {
+                incr.cancel();
+                latch.countDown();
+            }
+        });
+
+        latch.await();
+
+        assertThat(incr.isCancelled(), is(true));
+        assertThat(counter.get(), is(3));
     }
 }

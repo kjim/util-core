@@ -2,6 +2,7 @@ package org.gleamy.util;
 
 import java.util.Date;
 import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -34,10 +35,13 @@ public class ScheduledThreadPoolTimer extends Timer {
 
     @Override
     public Cancellable schedule(Date when, Function f) {
-        java.util.TimerTask task = NativeTimer.toNativeTimerTask(f);
-        long fromNow = when.getTime() - System.currentTimeMillis();
-        underlying.schedule(task, fromNow, TimeUnit.MILLISECONDS);
-        return NativeTimer.fromNativeTimerTask(task);
+        final long fromNow = when.getTime() - System.currentTimeMillis();
+        final ScheduledFuture<?> scheduled = underlying.schedule(new TimerTask(f), fromNow, TimeUnit.MILLISECONDS);
+        return new CancellableSink(new Function() {
+            public void apply() {
+                scheduled.cancel(true);
+            }
+        });
     }
 
     @Override
@@ -48,14 +52,31 @@ public class ScheduledThreadPoolTimer extends Timer {
 
     public Cancellable schedule(long wait, TimeUnit waitUnit, long period, TimeUnit periodUnit,
             Function f) {
-        java.util.TimerTask task = NativeTimer.toNativeTimerTask(f);
-        underlying.scheduleAtFixedRate(task,
+        final ScheduledFuture<?> scheduled = underlying.scheduleAtFixedRate(
+                new TimerTask(f),
                 waitUnit.toMillis(wait), periodUnit.toMillis(period), TimeUnit.MILLISECONDS);
-        return NativeTimer.fromNativeTimerTask(task);
+        return new CancellableSink(new Function() {
+            public void apply() {
+                scheduled.cancel(true);
+            }
+        });
     }
 
     @Override
     public void stop() {
         underlying.shutdown();
+    }
+
+    private static class TimerTask implements Runnable {
+        private Function f;
+
+        public TimerTask(Function f) {
+            this.f = f;
+        }
+
+        @Override
+        public void run() {
+            f.apply();
+        }
     }
 }

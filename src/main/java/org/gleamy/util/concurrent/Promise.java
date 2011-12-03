@@ -9,6 +9,8 @@ import org.gleamy.util.Return;
 import org.gleamy.util.Throw;
 import org.gleamy.util.Try;
 import org.gleamy.util.Unit;
+import org.gleamy.util.internal.Locals;
+import org.gleamy.util.internal.SavedLocals;
 
 public class Promise<A> extends RichFuture<A> {
     private final IVar<Try<A>> ivar;
@@ -106,5 +108,27 @@ public class Promise<A> extends RichFuture<A> {
      */
     public boolean updateIfEmpty(Try<A> result) {
         return ivar.set(result);
+    }
+
+    @Override
+    public RichFuture<A> respond(Function1<Try<A>, Unit> k) {
+        return respond0(k);
+    }
+
+    private RichFuture<A> respond0(final Function1<Try<A>, Unit> k) {
+        final SavedLocals saved = Locals.save();
+        ivar.get(new Function1<Try<A>, Unit>() {
+            public Unit apply(Try<A> result) {
+                SavedLocals current = Locals.save();
+                saved.restore();
+                try {
+                    return k.apply(result);
+                }
+                finally {
+                    current.restore();
+                }
+            }
+        });
+        return null;
     }
 }

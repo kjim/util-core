@@ -71,7 +71,7 @@ public class Promise<A> extends RichFuture<A> {
      *
      * @throws ImmutableResult if the Promise is already populated
      */
-    public void setValue(A result) throws ImmutableException {
+    public void setValue(A result) throws ImmutableRuntimeException {
         update(new Return<A>(result));
     }
 
@@ -80,7 +80,7 @@ public class Promise<A> extends RichFuture<A> {
      *
      * @throws ImmutableResult if the Promise is already populated
      */
-    public void setException(RuntimeException exception) throws ImmutableException {
+    public void setException(RuntimeException exception) throws ImmutableRuntimeException {
         update(new Throw<A>(exception));
     }
 
@@ -91,9 +91,9 @@ public class Promise<A> extends RichFuture<A> {
      *
      * @throws ImmutableResult if the Promise is already populated
      */
-    public void update(Try<A> result) throws ImmutableException {
+    public void update(Try<A> result) throws ImmutableRuntimeException {
         if (!updateIfEmpty(result)) {
-            throw new ImmutableException("Result set multiple times: " + result);
+            throw new ImmutableRuntimeException("Result set multiple times: " + result);
         }
     }
 

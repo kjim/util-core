@@ -1,10 +1,10 @@
 package org.gleamy.util.concurrent;
 
-public class ImmutableException extends RuntimeException {
+public class ImmutableRuntimeException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
-    public ImmutableException(String message) {
+    public ImmutableRuntimeException(String message) {
         super(message);
     }
 }

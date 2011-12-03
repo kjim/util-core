@@ -52,7 +52,7 @@ public class PromiseTest {
             promise.setValue("set again");
             fail("success to set");
         }
-        catch (ImmutableException e) {
+        catch (ImmutableRuntimeException e) {
             assertTrue(true);
         }
 
@@ -78,7 +78,7 @@ public class PromiseTest {
             promise.setException(new RuntimeException("again"));
             fail("success to set");
         }
-        catch (ImmutableException e) {
+        catch (ImmutableRuntimeException e) {
             assertTrue(true);
         }
 

@@ -10,11 +10,13 @@ import java.util.concurrent.TimeoutException;
 import org.gleamy.util.Cancellable;
 import org.gleamy.util.Function;
 import org.gleamy.util.Function0;
+import org.gleamy.util.Function1;
 import org.gleamy.util.Return;
 import org.gleamy.util.Throw;
 import org.gleamy.util.Timer;
 import org.gleamy.util.Try;
 import org.gleamy.util.TryAbstract;
+import org.gleamy.util.Unit;
 
 public abstract class RichFuture<A> {
 
@@ -40,6 +42,16 @@ public abstract class RichFuture<A> {
     public static <A> RichFuture<A> newInstance(Function0<A> a) {
         return new Promise<A>(TryAbstract.newInstance(a));
     }
+
+    /**
+     * When the computation completes, invoke the given callback function. Respond()
+     * yields a Try (either a Return or a Throw). This method is most useful for
+     * very generic code (like libraries). Otherwise, it is a best practice to use
+     * one of the alternatives (onSuccess(), onFailure(), etc.). Note that almost
+     * all methods on Future[_] are written in terms of respond(), so this is
+     * the essential template method for use in concrete subclasses.
+     */
+    public abstract RichFuture<A> respond(Function1<Try<A>, Unit> k);
 
     /**
      * Block indefinitely, wait for the result of the Future to be available.
@@ -75,12 +87,18 @@ public abstract class RichFuture<A> {
         Date timeoutAt = new Date(System.currentTimeMillis() + unit.toMillis(timeout));
 
         final Promise<A> promise = new Promise<A>();
-        Cancellable task = timer.schedule(timeoutAt, new Function() {
+        final Cancellable timeoutMonitor = timer.schedule(timeoutAt, new Function() {
             public void apply() {
                 promise.updateIfEmpty(new Throw<A>(new TimeoutRuntimeException()));
             }
         });
-        promise.linkTo(task);
+        respond(new Function1<Try<A>, Unit>() {
+            public Unit apply(Try<A> r) {
+                timeoutMonitor.cancel();
+                promise.updateIfEmpty(r);
+                return Unit.getInstance();
+            }
+        });
         return promise;
     }
 

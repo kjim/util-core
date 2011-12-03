@@ -23,23 +23,15 @@ public class RichFutureTest {
                     return true;
                 }
             });
-            RichFuture<Boolean> monitorLight = light.within(timer, 500, TimeUnit.MILLISECONDS);
-            assertThat(light.apply(), is(true));
-            try {
-                monitorLight.apply(200, TimeUnit.MILLISECONDS);
-                fail("monitor task is ended?");
-            }
-            catch (TimeoutException e) {
-                // monitor is never end task
-                assertTrue(true);
-            }
+            RichFuture<Boolean> timeoutEnabledLight = light.within(timer, 500, TimeUnit.MILLISECONDS);
+            assertThat(timeoutEnabledLight.apply(), is(true));
 
             // heavy task
             Promise<Boolean> heavy = new Promise<Boolean>();
 
-            RichFuture<Boolean> monitorHeavy = heavy.within(timer, 200, TimeUnit.MILLISECONDS);
+            RichFuture<Boolean> timeoutEnabledHeavy = heavy.within(timer, 200, TimeUnit.MILLISECONDS);
             try {
-                monitorHeavy.apply();
+                timeoutEnabledHeavy.apply();
                 fail("monitor task is ended?");
             }
             catch (TimeoutRuntimeException e) {
@@ -47,6 +39,22 @@ public class RichFutureTest {
             }
             assertThat(heavy.isDefined(), is(false));
             assertThat(heavy.isCancelled(), is(false));
+
+            assertThat(timeoutEnabledHeavy.isDefined(), is(true));
+            assertThat(timeoutEnabledHeavy.isCancelled(), is(false));
+
+            timeoutEnabledHeavy.cancel();
+
+            assertThat(timeoutEnabledHeavy.isDefined(), is(true));
+            assertThat(timeoutEnabledHeavy.isCancelled(), is(true));
+
+            assertThat(heavy.isDefined(), is(false));
+            assertThat(heavy.isCancelled(), is(false));
+
+            heavy.cancel();
+
+            assertThat(heavy.isDefined(), is(false));
+            assertThat(heavy.isCancelled(), is(true));
         }
         finally {
             timer.stop();

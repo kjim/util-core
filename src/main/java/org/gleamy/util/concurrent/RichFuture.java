@@ -1,14 +1,18 @@
 package org.gleamy.util.concurrent;
 
+import java.util.Date;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.gleamy.util.Cancellable;
+import org.gleamy.util.Function;
 import org.gleamy.util.Function0;
 import org.gleamy.util.Return;
 import org.gleamy.util.Throw;
+import org.gleamy.util.Timer;
 import org.gleamy.util.Try;
 import org.gleamy.util.TryAbstract;
 
@@ -61,6 +65,24 @@ public abstract class RichFuture<A> {
     public abstract void cancel();
 
     public abstract Try<A> get();
+
+    /**
+     * Returns a new Future that will error if this Future does not return in time.
+     *
+     * @param timeout indicates how long you are willing to wait for the result to be available.
+     */
+    public RichFuture<A> within(Timer timer, long timeout, TimeUnit unit) {
+        Date timeoutAt = new Date(System.currentTimeMillis() + unit.toMillis(timeout));
+
+        final Promise<A> promise = new Promise<A>();
+        Cancellable task = timer.schedule(timeoutAt, new Function() {
+            public void apply() {
+                promise.updateIfEmpty(new Throw<A>(new TimeoutRuntimeException()));
+            }
+        });
+        promise.linkTo(task);
+        return promise;
+    }
 
     /**
      * Demands that the result of the future be available within `timeout`. The result

@@ -112,10 +112,13 @@ public class Promise<A> extends RichFuture<A> {
 
     @Override
     public RichFuture<A> respond(Function1<Try<A>, Unit> k) {
-        return respond0(k);
+        respond0(k);
+
+        // FIXME: return the instance of RichFuture
+        return null;
     }
 
-    private RichFuture<A> respond0(final Function1<Try<A>, Unit> k) {
+    private void respond0(final Function1<Try<A>, Unit> k) {
         final SavedLocals saved = Locals.save();
         ivar.get(new Function1<Try<A>, Unit>() {
             public Unit apply(Try<A> result) {
@@ -129,6 +132,5 @@ public class Promise<A> extends RichFuture<A> {
                 }
             }
         });
-        return null;
     }
 }
